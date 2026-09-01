@@ -94,7 +94,7 @@ sqlc: ## Generate type-safe Go from the SQL in internal/storage/queries
 
 .PHONY: tools
 tools: ## Install the development tools this project expects
-	go install github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+	go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
 	go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
 	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 	go install golang.org/x/vuln/cmd/govulncheck@latest
