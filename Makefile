@@ -32,7 +32,7 @@ reset: ## Destroy containers and volumes, then start fresh
 
 .PHONY: run
 run: ## Run the API locally
-	go run -ldflags "$(LDFLAGS)" ./cmd/api
+	set -a; . ./.env; set +a; go run -ldflags "$(LDFLAGS)" ./cmd/api
 
 .PHONY: build
 build: ## Compile the API binary
