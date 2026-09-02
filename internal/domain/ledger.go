@@ -69,7 +69,38 @@ type Transaction struct {
 //   - Use Money.Add so overflow is detected rather than silently wrapping.
 //   - Return ErrUnbalancedTransaction when a currency group does not sum to zero.
 func (t Transaction) Validate() error {
-	return nil // replace me
+	if len(t.Entries) < 2 { //invariant1: at least two Entries
+		return ErrInsufficientEntries
+	}
+
+	currencySums := make(map[Currency]Money) //track balance by currency code -> BRL, USD, EUR ...
+
+	for _, entry := range t.Entries {
+		currencyCode := entry.Amount.Currency()
+
+		currentSum, exists := currencySums[currencyCode]
+		if !exists {
+			var err error
+			currentSum, err = Zero(currencyCode)
+			if err != nil {
+				return err
+			}
+		}
+
+		//invariant2
+		newSum, err := currentSum.Add(entry.Amount)
+		if err != nil {
+			return err
+		}
+		currencySums[currencyCode] = newSum
+	}
+
+	for _, sum := range currencySums {
+		if !sum.IsZero() {
+			return ErrUnbalancedTransaction
+		}
+	}
+	return nil
 }
 
 // NewTransfer builds the entries for moving amount from one account to another.

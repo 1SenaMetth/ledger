@@ -103,8 +103,6 @@ func TestSystemAccountMayGoNegative(t *testing.T) {
 }
 
 func TestTransactionValidate(t *testing.T) {
-	t.Skip("TODO(phase1): implement Transaction.Validate, then delete this line")
-
 	a, b := uuid.New(), uuid.New()
 
 	balanced := Transaction{Entries: []Entry{
