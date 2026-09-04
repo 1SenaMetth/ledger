@@ -73,7 +73,8 @@ func (t Transaction) Validate() error {
 		return ErrInsufficientEntries
 	}
 
-	currencySums := make(map[Currency]Money) //track balance by currency code -> BRL, USD, EUR ...
+	//track balance by currency code -> BRL, USD, EUR ...
+	currencySums := make(map[Currency]Money)
 
 	for _, entry := range t.Entries {
 		currencyCode := entry.Amount.Currency()
@@ -118,5 +119,58 @@ func (t Transaction) Validate() error {
 // between reading the balance and writing the entries is the storage layer's
 // job, and it is milestone 1.8 in the roadmap. Do not try to solve it here.
 func NewTransfer(from, to Account, amount Money, description, idempotencyKey string) (Transaction, error) {
-	return Transaction{}, nil // replace me
+	if !amount.IsPositive() {
+		return Transaction{}, ErrNonPositiveAmount
+	}
+
+	if from.ID == to.ID {
+		return Transaction{}, ErrSameAccount
+	}
+
+	curr := amount.Currency()
+	if from.Balance.Currency() != curr || to.Balance.Currency() != curr {
+		return Transaction{}, ErrCurrencyMismatch
+	}
+	if !from.AllowsNegativeBalance() {
+		cmp, err := from.Balance.Compare(amount)
+		if err != nil {
+			return Transaction{}, err
+		}
+		if cmp < 0 {
+			return Transaction{}, ErrInsufficientFunds
+		}
+	}
+
+	debitAmount, err := amount.Neg()
+	if err != nil {
+		return Transaction{}, err
+	}
+
+	txID := uuid.New()
+
+	tx := Transaction{
+		ID:             txID,
+		IdempotencyKey: idempotencyKey,
+		Description:    description,
+		Entries: []Entry{
+			{
+				ID:            uuid.New(),
+				TransactionID: txID,
+				AccountID:     from.ID,
+				Amount:        debitAmount,
+			},
+			{
+				ID:            uuid.New(),
+				TransactionID: txID,
+				AccountID:     to.ID,
+				Amount:        amount,
+			},
+		},
+	}
+	if err := tx.Validate(); err != nil {
+		return Transaction{}, err
+	}
+
+	return tx, nil
+
 }

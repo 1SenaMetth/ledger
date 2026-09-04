@@ -26,7 +26,6 @@ func systemAccount(balance int64, c Currency) Account {
 }
 
 func TestNewTransfer(t *testing.T) {
-	t.Skip("TODO(phase1): implement domain.NewTransfer, then delete this line")
 
 	from := wallet(10_000, BRL) // R$100.00
 	to := wallet(0, BRL)
@@ -62,7 +61,6 @@ func TestNewTransfer(t *testing.T) {
 }
 
 func TestNewTransferRejections(t *testing.T) {
-	t.Skip("TODO(phase1): implement domain.NewTransfer, then delete this line")
 
 	from := wallet(10_000, BRL)
 	to := wallet(0, BRL)
@@ -92,7 +90,6 @@ func TestNewTransferRejections(t *testing.T) {
 
 // A system account funding a deposit is allowed to go negative.
 func TestSystemAccountMayGoNegative(t *testing.T) {
-	t.Skip("TODO(phase1): implement domain.NewTransfer, then delete this line")
 
 	external := systemAccount(0, BRL)
 	userWallet := wallet(0, BRL)
