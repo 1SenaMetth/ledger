@@ -41,8 +41,28 @@ func TestNewTransfer(t *testing.T) {
 		t.Errorf("a fresh transfer must be valid, got: %v", err)
 	}
 
+	if tx.ID == uuid.Nil {
+		t.Errorf("expected transaction ID to be generated, got nil")
+	}
+
 	var debit, credit int64
+	seenIDs := make(map[uuid.UUID]bool)
+
 	for _, e := range tx.Entries {
+		if e.ID == uuid.Nil {
+			t.Errorf("expected entry ID to be generated for accounts %s, got Nil", e.AccountID)
+		}
+
+		if seenIDs[e.ID] {
+			t.Errorf("entries must have distinct IDs, found duplicate: %s", e.ID)
+		}
+		seenIDs[e.ID] = true
+
+		if e.TransactionID != tx.ID {
+			t.Errorf("entry TransactionID = %s, want parent tx.ID %s", e.TransactionID, tx.ID)
+
+		}
+
 		switch e.AccountID {
 		case from.ID:
 			debit = e.Amount.Minor()
