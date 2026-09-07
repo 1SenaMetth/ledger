@@ -83,12 +83,13 @@ func Logger(next http.Handler) http.Handler {
 // process and dropping every in-flight request on the same server.
 func Recoverer(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
 		defer func() {
 			if rec := recover(); rec != nil {
-				slog.ErrorContext(r.Context(), "panic recovered",
+				slog.ErrorContext(ctx, "panic recovered",
 					"panic", rec,
 					"path", r.URL.Path,
-					"request_id", RequestIDFrom(r.Context()),
+					"request_id", RequestIDFrom(ctx),
 				)
 				WriteProblem(w, r, http.StatusInternalServerError,
 					"Internal Server Error", "an unexpected error occurred")

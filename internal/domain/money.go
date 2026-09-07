@@ -134,7 +134,9 @@ func (m Money) String() string {
 		}
 		abs = -m.minor
 	}
-
+	//nolint:gosec
+	//exp is 0 or 2 here (guarded by the two early returns above)
+	//so pow10(exp) is at most 1-- and this conversion cannot overflow int64
 	div := int64(pow10(exp))
 	sign := ""
 	if neg {

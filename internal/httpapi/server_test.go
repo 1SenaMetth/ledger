@@ -28,7 +28,7 @@ func TestHealthEndpoints(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			srv := &Server{DB: tt.db, Version: "test", Commit: "abc123"}
-			req := httptest.NewRequest(http.MethodGet, tt.path, nil)
+			req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, tt.path, nil)
 			rec := httptest.NewRecorder()
 
 			srv.Routes().ServeHTTP(rec, req)
@@ -42,7 +42,7 @@ func TestHealthEndpoints(t *testing.T) {
 
 func TestRequestIDIsSetOnResponse(t *testing.T) {
 	srv := &Server{DB: stubPinger{}}
-	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/healthz", nil)
 	rec := httptest.NewRecorder()
 
 	srv.Routes().ServeHTTP(rec, req)
@@ -54,7 +54,7 @@ func TestRequestIDIsSetOnResponse(t *testing.T) {
 
 func TestRequestIDIsPreservedFromUpstream(t *testing.T) {
 	srv := &Server{DB: stubPinger{}}
-	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/healthz", nil)
 	req.Header.Set("X-Request-Id", "upstream-id")
 	rec := httptest.NewRecorder()
 
@@ -72,7 +72,7 @@ func TestRecovererTurnsPanicInto500(t *testing.T) {
 	h := Chain(panicking, RequestID, Recoverer)
 
 	rec := httptest.NewRecorder()
-	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
+	h.ServeHTTP(rec, httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/", nil))
 
 	if rec.Code != http.StatusInternalServerError {
 		t.Errorf("status = %d, want 500", rec.Code)
@@ -85,7 +85,7 @@ func TestRecovererTurnsPanicInto500(t *testing.T) {
 func TestUnknownRouteIs404(t *testing.T) {
 	srv := &Server{DB: stubPinger{}}
 	rec := httptest.NewRecorder()
-	srv.Routes().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/nope", nil))
+	srv.Routes().ServeHTTP(rec, httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/nope", nil))
 
 	if rec.Code != http.StatusNotFound {
 		t.Errorf("status = %d, want 404", rec.Code)
