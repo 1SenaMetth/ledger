@@ -14,6 +14,38 @@ WHERE id = $1;
 -- transfers. See the note in internal/storage/postgres/db.go.
 SELECT id, owner_id, type, currency, balance_minor, version, created_at, updated_at
 FROM accounts
-WHERE id = ANY($1::uuid[])
+WHERE id = ANY(sqlc.arg('account_ids')::uuid[])
 ORDER BY id
 FOR UPDATE;
+
+-- name: UpdateAccountBalance :one
+-- Concurrency is guarded by LockAccountsForUpdate (FOR UPDATE); version is bumped for audit/observability only.
+UPDATE accounts
+SET
+    balance_minor = $2,
+    version = version + 1,
+    updated_at = NOW()
+WHERE id = $1
+RETURNING id, owner_id, type, currency, balance_minor, version, created_at, updated_at;
+
+-- name: CreateTransaction :one
+INSERT INTO transactions(
+    id,
+    idempotency_key, 
+    description 
+) VALUES (
+    $1, $2, $3
+)
+RETURNING id, idempotency_key, description, created_at;
+
+-- name: CreateEntry :one
+INSERT INTO entries(
+id,
+transaction_id,  
+account_id,  
+amount_minor,
+currency
+)VALUES(
+$1, $2, $3, $4, $5
+)
+RETURNING id, transaction_id, account_id, amount_minor, currency, created_at;
