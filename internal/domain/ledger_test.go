@@ -2,9 +2,9 @@ package domain
 
 import (
 	"errors"
-	"testing"
-
 	"github.com/google/uuid"
+	"testing"
+	"time"
 )
 
 func wallet(balance int64, c Currency) Account {
@@ -145,5 +145,74 @@ func TestTransactionValidate(t *testing.T) {
 	}}
 	if err := mixed.Validate(); !errors.Is(err, ErrUnbalancedTransaction) {
 		t.Errorf("mixed-currency transaction error = %v, want ErrUnbalancedTransaction", err)
+	}
+}
+
+func TestParseAccount(t *testing.T) {
+	id := uuid.New()
+	ownerID := uuid.New()
+	now := time.Now().UTC()
+
+	tests := []struct {
+		name         string
+		rawType      string
+		balanceMinor int64
+		currency     string
+		wantErr      error
+	}{
+
+		{"Valid user wallet", string(AccountUserWallet), 1500, "BRL", nil},
+		{"valid system account", string(AccountSystem), -500, "USD", nil},
+		{"invalid type rejects", "checking", 1500, "BRL", ErrInvalidAccountType},
+		{"invalid currency rejects", string(AccountUserWallet), 1500, "DODGECOINGAGA", ErrInvalidCurrency},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var ownerPtr *uuid.UUID
+			if tt.rawType == string(AccountUserWallet) {
+				ownerPtr = &ownerID
+			}
+
+			got, err := ParseAccount(
+				id,
+				ownerPtr,
+				tt.rawType,
+				tt.balanceMinor,
+				tt.currency,
+				1,
+				now,
+				now,
+			)
+			if !errors.Is(err, tt.wantErr) {
+				t.Fatalf("ParseAccount() error = %v, want %v", err, tt.wantErr)
+			}
+
+			if tt.wantErr == nil {
+				if got.ID != id {
+					t.Errorf("got ID %v, want %v", got.ID, id)
+				}
+				if got.OwnerID != ownerPtr {
+					t.Errorf("got OwnerID %v, want %v", got.OwnerID, ownerPtr)
+				}
+				if string(got.Type) != tt.rawType {
+					t.Errorf("got Type %v, want %v", got.Type, tt.rawType)
+				}
+				if got.Balance.Minor() != tt.balanceMinor {
+					t.Errorf("got balance minor %d, want %d", got.Balance.Minor(), tt.balanceMinor)
+				}
+				if string(got.Balance.Currency()) != tt.currency {
+					t.Errorf("got Currency %v, want %v", got.Balance.Currency(), tt.currency)
+				}
+				if got.Version != 1 {
+					t.Errorf("got Version %d, want 1", got.Version)
+				}
+				if !got.CreatedAt.Equal(now) {
+					t.Errorf("got CreatedAt %v, want %v", got.CreatedAt, now)
+				}
+				if !got.UpdatedAt.Equal(now) {
+					t.Errorf("got UpdatedAt %v, want %v", got.UpdatedAt, now)
+				}
+			}
+		})
 	}
 }

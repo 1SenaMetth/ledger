@@ -31,6 +31,40 @@ type Account struct {
 	UpdatedAt time.Time
 }
 
+func ParseAccount(
+	id uuid.UUID,
+	ownerID *uuid.UUID,
+	rawType string,
+	balanceMinor int64,
+	currency string,
+	version int64,
+	createdAt time.Time,
+	updatedAt time.Time,
+) (Account, error) {
+
+	accType := AccountType(rawType)
+	switch accType {
+	case AccountUserWallet, AccountSystem:
+	default:
+		return Account{}, ErrInvalidAccountType
+	}
+
+	balance, err := NewMoney(balanceMinor, Currency(currency))
+	if err != nil {
+		return Account{}, err
+	}
+
+	return Account{
+		ID:        id,
+		OwnerID:   ownerID,
+		Type:      accType,
+		Balance:   balance,
+		Version:   version,
+		CreatedAt: createdAt,
+		UpdatedAt: updatedAt,
+	}, nil
+}
+
 // AllowsNegativeBalance reports whether this account may hold a debt.
 func (a Account) AllowsNegativeBalance() bool {
 	return a.Type == AccountSystem

@@ -15,4 +15,5 @@ var (
 	ErrAccountNotFound       = errors.New("account not found")
 	ErrAccountClosed         = errors.New("account is closed")
 	ErrInsufficientEntries   = errors.New("transaction must have at least two entries")
+	ErrInvalidAccountType    = errors.New("invalid account type")
 )
