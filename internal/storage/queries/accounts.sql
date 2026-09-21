@@ -18,14 +18,16 @@ WHERE id = ANY(sqlc.arg('account_ids')::uuid[])
 ORDER BY id
 FOR UPDATE;
 
+
+
 -- name: UpdateAccountBalance :one
--- Concurrency is guarded by LockAccountsForUpdate (FOR UPDATE); version is bumped for audit/observability only.
+-- relative update prevents lost updates; the lock gives the funds check a current balance and, taken in ID order, prevents deadlocks. 
 UPDATE accounts
 SET
-    balance_minor = $2,
+    balance_minor = balance_minor + sqlc.arg('amount_minor'),
     version = version + 1,
     updated_at = NOW()
-WHERE id = $1
+WHERE id = sqlc.arg('id')
 RETURNING id, owner_id, type, currency, balance_minor, version, created_at, updated_at;
 
 -- name: CreateTransaction :one

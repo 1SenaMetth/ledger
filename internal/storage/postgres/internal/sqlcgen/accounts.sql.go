@@ -151,21 +151,21 @@ func (q *Queries) LockAccountsForUpdate(ctx context.Context, accountIds []uuid.U
 const updateAccountBalance = `-- name: UpdateAccountBalance :one
 UPDATE accounts
 SET
-    balance_minor = $2,
+    balance_minor = balance_minor + $1,
     version = version + 1,
     updated_at = NOW()
-WHERE id = $1
+WHERE id = $2
 RETURNING id, owner_id, type, currency, balance_minor, version, created_at, updated_at
 `
 
 type UpdateAccountBalanceParams struct {
-	ID           uuid.UUID
-	BalanceMinor int64
+	AmountMinor int64
+	ID          uuid.UUID
 }
 
-// Concurrency is guarded by LockAccountsForUpdate (FOR UPDATE); version is bumped for audit/observability only.
+// relative update prevents lost updates; the lock gives the funds check a current balance and, taken in ID order, prevents deadlocks.
 func (q *Queries) UpdateAccountBalance(ctx context.Context, arg UpdateAccountBalanceParams) (Account, error) {
-	row := q.db.QueryRow(ctx, updateAccountBalance, arg.ID, arg.BalanceMinor)
+	row := q.db.QueryRow(ctx, updateAccountBalance, arg.AmountMinor, arg.ID)
 	var i Account
 	err := row.Scan(
 		&i.ID,

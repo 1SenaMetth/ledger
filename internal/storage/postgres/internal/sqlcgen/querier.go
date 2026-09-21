@@ -22,7 +22,7 @@ type Querier interface {
 	// Deterministic ordering prevents deadlocks between concurrent opposing
 	// transfers. See the note in internal/storage/postgres/db.go.
 	LockAccountsForUpdate(ctx context.Context, accountIds []uuid.UUID) ([]Account, error)
-	// Concurrency is guarded by LockAccountsForUpdate (FOR UPDATE); version is bumped for audit/observability only.
+	// relative update prevents lost updates; the lock gives the funds check a current balance and, taken in ID order, prevents deadlocks.
 	UpdateAccountBalance(ctx context.Context, arg UpdateAccountBalanceParams) (Account, error)
 }
 
